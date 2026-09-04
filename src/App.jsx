@@ -69,23 +69,27 @@ export default function App() {
   );
   const activeCard = filteredData[cardIdx] || filteredData[0];
 
-  // Carrega as estrelas direto do Supabase
+  // Carrega do Supabase ou usa o localStorage se falhar
   useEffect(() => {
     async function loadProgress() {
-      try {
-        const { data, error } = await supabase
-          .from("progress")
-          .select("stars")
-          .eq("user_name", "lele")
-          .single();
+      const local = localStorage.getItem("lingo_kid_stars");
+      if (local) setStars(parseInt(local, 10));
 
-        if (data) {
-          setStars(data.stars);
-        } else if (error) {
-          await supabase.from("progress").insert([{ user_name: "lele", stars: 0 }]);
+      try {
+        if (supabase) {
+          const { data } = await supabase
+            .from("progress")
+            .select("stars")
+            .eq("user_name", "lele")
+            .single();
+
+          if (data && data.stars !== undefined) {
+            setStars(data.stars);
+            localStorage.setItem("lingo_kid_stars", data.stars.toString());
+          }
         }
       } catch (err) {
-        console.error("Erro ao carregar do Supabase:", err);
+        console.warn("Modo offline ou Supabase pendente:", err);
       }
     }
     loadProgress();
